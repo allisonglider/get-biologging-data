@@ -39,7 +39,7 @@ vignettes/*.pdf
 .Renviron
 
 # directories
-data/
+raw_data/
 
 # Ignore config file, this contains access codes that should not be loaded to github
 config.yml
