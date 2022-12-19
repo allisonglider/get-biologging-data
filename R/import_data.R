@@ -10,7 +10,7 @@ library(dplyr)
 # It relies on having a valid config.yml file in your root directory, if you do not
 # have a config file you can get one from me by email (allison.patterson@mail.mcgill.ca)
 
-source('scripts/connect_biologging_database.R')
+source('R/connect_biologging_database.R')
 
 # -----
 # con is a link to the database which contains metadata about deployments and birds
@@ -52,6 +52,9 @@ deployments <- dep %>%
 
 # make a list of the deployments we want to download 
 dd <- deployments$dep_id[1:10] # We will limit it to the first 10 deployments for this example
+
+# check if project contains a folder named <raw_data> create one if needed
+if (dir.exists('raw_data') == F) dir.create('raw_data', recursive = T)
 
 # Save out the deployment metadata as an RDS file
 saveRDS(deployments, 'raw_data/deployments.RDS')
