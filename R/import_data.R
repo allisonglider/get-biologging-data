@@ -5,6 +5,7 @@ library(arrow)
 library(config)
 library(seabiRds)
 library(dplyr)
+# hello
 
 # This runs the script that will establish connections to the data on the cloud
 # It relies on having a valid config.yml file in your root directory, if you do not
