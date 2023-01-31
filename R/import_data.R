@@ -51,13 +51,13 @@ deployments <- dep %>%
   collect() # collect data from the data base
 
 # make a list of the deployments we want to download 
-dd <- deployments$dep_id[1:10] # We will limit it to the first 10 deployments for this example
+dd <- deployments$dep_id[1:5] # We will limit it to the first 5 deployments for this example
 
 # check if project contains a folder named <raw_data> create one if needed
 if (dir.exists('raw_data') == F) dir.create('raw_data', recursive = T)
 
 # Save out the deployment metadata as an RDS file
-saveRDS(deployments, 'raw_data/deployments.RDS')
+saveRDS(deployments[1:5,], 'raw_data/deployments.RDS')
 
 # -----
 # gps is a link to the GPS data saved as an Arrow data set on AWS S3
