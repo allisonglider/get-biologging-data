@@ -7,15 +7,15 @@ theme_set(theme_light())
 # ----
 
 # read in deployment data
-deployments <- readRDS('raw_data/deployments.RDS') |> 
+deployments <- readRDS('raw_data/deployments.RDS') %>% 
   select(dep_id, metal_band, nest, time_released, time_recaptured, 
          dep_lon, dep_lat, mass_on, mass_off, status_on, status_off, sex) 
 
 # ----
 # load the location data from the GPS dataset
-gps_data <- arrow::open_dataset('raw_data/gps') |> 
-  select(dep_id, time, lon, lat) |> 
-  collect() |> 
+gps_data <- arrow::open_dataset('raw_data/gps') %>% 
+  select(dep_id, time, lon, lat) %>% 
+  collect() %>% 
   arrange(dep_id, time) 
 
 # some basic gps data processing using seabiRds
@@ -29,23 +29,23 @@ gps_data <-do.call(rbind,
                             }))
 
 # recalculate movement metrics
-gps_data <- gps_data |> 
-  inner_join(deployments) |> 
-  group_by(dep_id) |> 
+gps_data <- gps_data %>% 
+  inner_join(deployments) %>% 
+  group_by(dep_id) %>% 
   mutate(
     coldist = getColDist(lon = lon, lat = lat, colonyLon = dep_lon[1], colonyLat = dep_lat[1]), # distance from colony in km
     dist = getDist(lon = lon, lat = lat), # distance between successive GPS fixes in km
     dt = getDT(time = time, units = 'hours'), # time between successive GPS fixes in hours
     speed = dist/dt # ground speed in km/hr
-  ) |> select(dep_id, time, lon, lat, coldist, dist, dt, speed)
+  ) %>% select(dep_id, time, lon, lat, coldist, dist, dt, speed)
 
 # ----
 # load the diving data from the tdr dataset
 
 arrow::open_dataset('raw_data/tdr')
-tdr_data <- arrow::open_dataset('raw_data/tdr') |> 
-  select(dep_id, time, temperature_c, depth_m, wet) |> 
-  collect() |> 
+tdr_data <- arrow::open_dataset('raw_data/tdr') %>% 
+  select(dep_id, time, temperature_c, depth_m, wet) %>% 
+  collect() %>% 
   arrange(dep_id, time) 
 
 # ----------
@@ -57,16 +57,16 @@ data <- data.frame()
 for (dd in unique(tdr_data$dep_id)) {
   
   # load a single deployment 
-  acc_data <- arrow::open_dataset('raw_data/acc') |> 
-    filter(dep_id %in% dd) |> 
-    select(dep_id, time, x, y, z) |> 
+  acc_data <- arrow::open_dataset('raw_data/acc') %>% 
+    filter(dep_id %in% dd) %>% 
+    select(dep_id, time, x, y, z) %>% 
     collect() 
   
   if (nrow(acc_data) > 0) {
     
-    acc_data <- acc_data |> 
-      group_by(dep_id) |> 
-      arrange(dep_id, time) |> 
+    acc_data <- acc_data %>% 
+      group_by(dep_id) %>% 
+      arrange(dep_id, time) %>% 
       mutate(
         # calculate wing beat frequency
         wbf = seabiRds::getPeakFrequency(data = z, time = time, method = 'fft', 
@@ -78,8 +78,8 @@ for (dd in unique(tdr_data$dep_id)) {
         odba = seabiRds::getDBA(X = x, Y = y, Z = z, time = time, window = 2)
       ) 
     
-    temp <- acc_data |> 
-      filter(!is.na(wbf)) |> 
+    temp <- acc_data %>% 
+      filter(!is.na(wbf)) %>% 
       inner_join(tdr_data) 
     
     data <- rbind(data, temp)
@@ -89,11 +89,11 @@ for (dd in unique(tdr_data$dep_id)) {
 # -----
 # combine data with gps_data, interpolate locations at frequency of data
 
-data <- data |> 
-  left_join(gps_data, by = c("dep_id", "time")) |> 
-  inner_join(deployments[,c('dep_id','dep_lon', 'dep_lat')], by = 'dep_id') |> 
-  group_by(dep_id) |> 
-  arrange(dep_id, time) |> 
+data <- data %>% 
+  left_join(gps_data, by = c("dep_id", "time")) %>% 
+  inner_join(deployments[,c('dep_id','dep_lon', 'dep_lat')], by = 'dep_id') %>% 
+  group_by(dep_id) %>% 
+  arrange(dep_id, time) %>% 
   mutate(
     lon = imputeTS::na_interpolation(lon), # simple linear interpolation of lon
     lat = imputeTS::na_interpolation(lat), # simple linear interpolation of lat
@@ -101,7 +101,7 @@ data <- data |>
     dt = seabiRds::getDT(time),
     speed = dist/dt,
     coldist = seabiRds::getColDist(lon, lat, dep_lon[1], dep_lat[1])
-  ) |> 
+  ) %>% 
   select(-dep_lon, -dep_lat) 
 
 # -----
