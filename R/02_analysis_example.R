@@ -4,11 +4,12 @@ library(seabiRds)
 library(ggplot2)
 theme_set(theme_light())
 
+
 # ----
 
 # read in deployment data
 deployments <- readRDS('raw_data/deployments.RDS') %>% 
-  select(dep_id, metal_band, nest, time_released, time_recaptured, 
+  select(dep_id, metal_band, site, nest, time_released, time_recaptured, 
          dep_lon, dep_lat, mass_on, mass_off, status_on, status_off, sex) 
 
 # ----
@@ -85,6 +86,9 @@ for (dd in unique(tdr_data$dep_id)) {
     data <- rbind(data, temp)
   }
 }
+
+if (dir.exists('processed_data') == F) dir.create('processed_data', recursive = T)
+saveRDS(data, 'processed_data/acc_data.RDS')
 
 # -----
 # combine data with gps_data, interpolate locations at frequency of data
