@@ -1,6 +1,5 @@
 library(DBI)
-library(RPostgreSQL)
-library(RPostgres)
+library(duckdb)
 library(arrow)
 library(config)
 library(seabiRds)
@@ -36,10 +35,10 @@ sex <- con %>%
 
 deployments <- dep %>% 
   filter(
-    site == 'Coats', # Only data from Coats Island site
+    site %in% c('Coats', 'CGM'), # Only data from Coats Island site
     species == 'TBMU', # Only data for TBMU
     time_released > as.POSIXct('2022-01-01'), # Only data from 2022
-    time_recaptured < as.POSIXct('2023-01-01'),
+    time_recaptured < as.POSIXct('2023-12-01'),
     !is.na(gps_id) # exclude and captures that did not result in a deployment
   ) %>% 
   left_join(sex) %>% # join with sex data
