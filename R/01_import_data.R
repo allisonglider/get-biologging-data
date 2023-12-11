@@ -4,6 +4,8 @@ library(arrow)
 library(config)
 library(seabiRds)
 library(dplyr)
+library(aws.s3)
+library(dbplyr)
 
 # This runs the script that will establish connections to the data on the cloud
 # It relies on having a valid config.yml file in your root directory, if you do not
@@ -22,41 +24,27 @@ dbListTables(con)
 dep <- con %>%
   tbl("deployments") 
 
-# Makes a connection to the gps_data table
-age <- con %>%
-  tbl("age") 
-
-# Makes a connection to the sex table
-sex <- con %>%
-  tbl("sex") 
-
 # -----
 # Use dplyr to query deployment metadata from the biologging database
 
 deployments <- dep %>% 
   filter(
-    site %in% c('Coats', 'CGM'), # Only data from Coats Island site
-    species == 'TBMU', # Only data for TBMU
-    time_released > as.POSIXct('2022-01-01'), # Only data from 2022
-    time_recaptured < as.POSIXct('2023-12-01'),
-    !is.na(gps_id) # exclude and captures that did not result in a deployment
+    species == 'PEBO', # Only data for TBMU
+    !is.na(acc_id) # exclude and captures that did not result in a deployment
   ) %>% 
-  left_join(sex) %>% # join with sex data
-  left_join(age) %>% # join with age data
   select(species, metal_band, dep_id, site, nest, 
          dep_lon,dep_lat, time_released, time_recaptured, 
-         status_on, status_off, mass_on, mass_off, gps_id, 
-         year_first_cap, age_first_cap, sex, sex_method, exclude) %>% # only return certain rows
+         status_on, status_off, mass_on, mass_off, gps_id, acc_id,
+         exclude) %>% # only return certain rows
   collect() # collect data from the data base
 
 # make a list of the deployments we want to download 
-dd <- deployments$dep_id[1:5] # We will limit it to the first 5 deployments for this example
-
+dd <- deployments$dep_id
 # check if project contains a folder named <raw_data> create one if needed
 if (dir.exists('raw_data') == F) dir.create('raw_data', recursive = T)
 
 # Save out the deployment metadata as an RDS file
-saveRDS(deployments[1:5,], 'raw_data/deployments.RDS')
+saveRDS(deployments, 'raw_data/deployments-PEBO.RDS')
 
 # -----
 # gps is a link to the GPS data saved as an Arrow data set on AWS S3
