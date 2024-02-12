@@ -4,7 +4,6 @@ library(seabiRds)
 library(ggplot2)
 theme_set(theme_light())
 
-
 # ----
 
 # read in deployment data
