@@ -4,6 +4,7 @@ library(arrow)
 library(config)
 library(seabiRds)
 library(dplyr)
+library(aws.s3)
 
 # This runs the script that will establish connections to the data on the cloud
 # It relies on having a valid config.yml file in your root directory, if you do not
@@ -35,7 +36,7 @@ sex <- con %>%
 
 deployments <- dep %>% 
   filter(
-    site %in% c('Coats', 'CGM'), # Only data from Coats Island site
+    #site %in% c('Coats', 'CGM'), 
     species == 'TBMU', # Only data for TBMU
     time_released > as.POSIXct('2022-01-01'), # Only data from 2022
     time_recaptured < as.POSIXct('2023-12-01'),
@@ -43,10 +44,29 @@ deployments <- dep %>%
   ) %>% 
   left_join(sex) %>% # join with sex data
   left_join(age) %>% # join with age data
-  select(species, metal_band, dep_id, site, nest, 
-         dep_lon,dep_lat, time_released, time_recaptured, 
-         status_on, status_off, mass_on, mass_off, gps_id, 
-         year_first_cap, age_first_cap, sex, sex_method, exclude) %>% # only return certain rows
+  select(species, # species code
+         metal_band, # metal band number - numeric
+         dep_id, # unique id for deployment
+         site, # colony
+         nest, # nest ID - not standardized
+         dep_lon, # deployment longitude
+         dep_lat, # deployment latitude
+         time_released, # time logger was attached in UTC
+         time_recaptured, # time logger was removed in UTC
+         status_on, 
+         status_off, 
+         mass_on, # mass at start (g)
+         mass_off, # mass at end (g)
+         gps_id, # GPS logger ID
+         tdr_id, # TDR logger ID
+         acc_id, # Accelerometer logger ID
+         gls_id, # Geolocator logger ID
+         year_first_cap, # year bird was first banded
+         age_first_cap, # Age at first capture (adult or chick)
+         sex, # Sex (M/F)
+         sex_method, # Sexing method
+         exclude # Notes on any issues with the deployment
+         ) %>% # only return certain rows
   collect() # collect data from the data base
 
 # make a list of the deployments we want to download 
@@ -56,7 +76,7 @@ dd <- deployments$dep_id[1:5] # We will limit it to the first 5 deployments for 
 if (dir.exists('raw_data') == F) dir.create('raw_data', recursive = T)
 
 # Save out the deployment metadata as an RDS file
-saveRDS(deployments[1:5,], 'raw_data/deployments.RDS')
+saveRDS(deployments[1:5,], 'deployments.RDS')
 
 # -----
 # gps is a link to the GPS data saved as an Arrow data set on AWS S3
