@@ -53,8 +53,8 @@ deployments <- dep %>%
          dep_lat, # deployment latitude
          time_released, # time logger was attached in UTC
          time_recaptured, # time logger was removed in UTC
-         status_on, 
-         status_off, 
+         status_on, # Breeding status at start (E - eggs, C - chicks, PB - pre-breeding, NB - non-breeder, FB - failed breeder)
+         status_off, # Breeding status at end (E - eggs, C - chicks, PB - pre-breeding, NB - non-breeder, FB - failed breeder)
          mass_on, # mass at start (g)
          mass_off, # mass at end (g)
          gps_id, # GPS logger ID
