@@ -75,7 +75,7 @@ for (dd in unique(tdr_data$dep_id)) {
       mutate(
         wbf = seabiRds::getPeakFrequency(data = z, time = time, method = 'fft',
                                          window = 30,
-                                         maxfreq = 10, ###set to 6
+                                         maxfreq = 6, ###set to 6
                                          threshold = 0.2,
                                          sample = 1),
         # odba = seabiRds::getDBA(X = x, Y = y, Z = z, time = time, window = 60),
