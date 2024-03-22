@@ -4,7 +4,6 @@ library(seabiRds)
 library(ggplot2)
 theme_set(theme_light())
 
-
 # ----
 
 # read in deployment data
@@ -12,10 +11,13 @@ deployments <- readRDS('raw_data/deployments-PEBO.RDS') |>
   select(dep_id, metal_band, site, nest, time_released, time_recaptured, 
          dep_lon, dep_lat, mass_on, mass_off, status_on, status_off) 
 
+deployments <- deployments[1:21,]
+dd <- unique(deployments$dep_id)
+
 # ----
 # load the location data from the GPS dataset
 gps_data <- arrow::open_dataset('raw_data/gps') |>
-  filter(species == 'PEBO') |> 
+  filter(species == 'PEBO', dep_id %in% dd) |> 
   select(dep_id, time, lon, lat) |>
   collect() |>
   arrange(dep_id, time) 
@@ -23,7 +25,7 @@ gps_data <- arrow::open_dataset('raw_data/gps') |>
 # some basic gps data processing using seabiRds
 
 # filter out any locations are too far apart for a murre to travel
-speed_threshold <- 150 # km/hr
+speed_threshold <- 100 # km/hr
 gps_data <-do.call(rbind, 
                    lapply(unique(gps_data$dep_id), 
                           function(x) {
@@ -46,7 +48,7 @@ gps_data <- gps_data |>
 
 arrow::open_dataset('raw_data/tdr')
 tdr_data <- arrow::open_dataset('raw_data/tdr') |>
-  filter(species == 'PEBO') |> 
+  filter(species == 'PEBO', dep_id %in% dd) |> 
   select(dep_id, time, temperature_c, depth_m, wet) |>
   collect() |>
   arrange(dep_id, time) 
@@ -54,10 +56,33 @@ tdr_data <- arrow::open_dataset('raw_data/tdr') |>
 # ----------
 # load the acc data one deployment at a time, do some basic processing and join with tdr and gps data
 
+time_step <- '30 sec'
+
+
 # create an output dataframe
 data <- data.frame()
 
 for (dd in unique(tdr_data$dep_id)) {
+  
+  g <- gps_data|>
+    filter(dep_id %in% dd) |> 
+    mutate(
+      fly = ifelse(coldist > 0.5 & speed > 10 & !is.na(speed), 'fly', 'other'),
+      fly_id = getSessions(coldist > 0.5 & speed > 10& !is.na(speed))
+    ) |> 
+    filter(fly == 'fly') |> 
+    group_by(dep_id, fly_id) |> 
+    summarize(
+      start = min(time),
+      end = max(time),
+      dur = n()
+    ) |> 
+    filter(dur == max(dur)[1])
+  
+  gps_sf <- gps_data |>
+    filter(dep_id %in% dd) |> 
+    #filter(time > g$start, time < g$end) |> 
+    sf::st_as_sf(coords = c('lon', 'lat'), crs = 4326)
   
   # load a single deployment 
   acc_data <- arrow::open_dataset('raw_data/acc') |>
@@ -69,6 +94,15 @@ for (dd in unique(tdr_data$dep_id)) {
     
     freq <- getFrequency(acc_data$time)
     
+    pitch_cal <- acc_data |> 
+      group_by(dep_id) |> 
+      filter(time > g$start, time < g$end) |> 
+      summarise(
+        meanx = median(x),
+        meany = median(y),
+        meanz = median(z)
+      )
+    
     acc_data <- acc_data |>
       group_by(dep_id) |>
       arrange(dep_id, time) |>
@@ -78,51 +112,44 @@ for (dd in unique(tdr_data$dep_id)) {
                                          maxfreq = 6, ###set to 6
                                          threshold = 0.2,
                                          sample = 1),
-        # odba = seabiRds::getDBA(X = x, Y = y, Z = z, time = time, window = 60),
-        # odba = zoo::rollmean(odba, k =  60 * freq, fill = NA, na.rm = T),
-        Pitch = seabiRds::getPitch(X = x, Y = y, Z = z, time = time, window = 1),
+        odba = seabiRds::getDBA(X = x, Y = y, Z = z, time = time, window = 1),
+        pitch = seabiRds::getPitch(X = x, #- pitch_cal$meanx, 
+                                   Y = y, #- pitch_cal$meany,  
+                                   Z = z, #- (1 - pitch_cal$meanz),
+                                   time = time, window = 1),
       ) 
+    
+    p <- ggplot(acc_data[seq(1, nrow(acc_data), 100),], aes(x = time, y = pitch)) + 
+      geom_line() +
+      ggtitle(dd)
+    print(p)
     
     temp <- acc_data |>
       filter(!is.na(wbf)) |>
-      inner_join(tdr_data)|>
-      left_join(gps_data, by = c("dep_id", "time")) |>
-      inner_join(deployments[,c('dep_id','dep_lon', 'dep_lat')], by = 'dep_id') |>
-      group_by(dep_id) |>
-      arrange(dep_id, time) |>
+      inner_join(tdr_data) |> 
       mutate(
-        lon = imputeTS::na_interpolation(lon), # simple linear interpolation of lon
-        lat = imputeTS::na_interpolation(lat), # simple linear interpolation of lat
-        dist = seabiRds::getDist(lon, lat),
-        dt = seabiRds::getDT(time),
-        speed = dist/dt,
-        coldist = seabiRds::getColDist(lon, lat, dep_lon[1], dep_lat[1])
-      ) |>
-      select(-dep_lon, -dep_lat) |>  
-      ungroup() |> 
-      slice(seq(1, n(), 5))
+        time = lubridate::round_date(time, time_step)
+      ) |> 
+      group_by(dep_id, time) |> 
+      summarize(
+        wbf = median(wbf),
+        odba = mean(odba),
+        prop_diving = sum(depth_m > 0.5)/n(),
+        max_depth = max(depth_m),
+        mean_pitch = mean(pitch),
+        sd_pitch = sd(pitch)
+      )
     
+    # add to output
     data <- rbind(data, temp)
   }
 }
 
+# save processed data
 if (dir.exists('processed_data') == F) dir.create('processed_data', recursive = T)
-saveRDS(data, 'processed_data/acc_data_PEBO.RDS')
+saveRDS(data, 'processed_data/acc_data.RDS')
+
 
 # -----
 
-# make spatial points object
-locs_sf <- sf::st_as_sf(data, coords = c('lon', 'lat'), crs = 4326)
 
-# make tracks
-tracks_sf <- locs_sf |>
-  group_by(dep_id) |>
-  summarize(
-    tot_dist = sum(dist),
-    n = n(),
-    do_union=FALSE) |>
-  filter(n > 1) |>
-  sf::st_cast(to = 'LINESTRING')
-
-# view tracks
-mapview::mapview(tracks_sf)
