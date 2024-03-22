@@ -3,6 +3,7 @@ require(duckdb)
 require(dplyr)
 require(arrow)
 require(config)
+require(dbplyr)
 
 Sys.setenv('AWS_ACCESS_KEY_ID' = config::get()$aws_key,
            'AWS_SECRET_ACCESS_KEY' = config::get()$aws_secret,
