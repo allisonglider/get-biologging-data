@@ -44,7 +44,7 @@ sex <- con %>%
 
 deployments <- dep %>% 
   filter(
-    #site %in% c('Coats', 'CGM'), 
+    site %in% c('Coats'), 
     species == 'TBMU', # Only data for TBMU
     time_released > as.POSIXct('2022-01-01'), # Only data from 2022
     time_recaptured < as.POSIXct('2023-12-01'),
@@ -78,13 +78,13 @@ deployments <- dep %>%
   collect() # collect data from the data base
 
 # make a list of the deployments we want to download 
-dd <- deployments$dep_id[1:5] # We will limit it to the first 5 deployments for this example
+dd <- deployments$dep_id#[1:5] # We will limit it to the first 5 deployments for this example
 
 # check if project contains a folder named <raw_data> create one if needed
 if (dir.exists('raw_data') == F) dir.create('raw_data', recursive = T)
 
 # Save out the deployment metadata as an RDS file
-saveRDS(deployments[1:5,], 'deployments.RDS')
+saveRDS(deployments, 'deployments.RDS')
 
 # -----
 # gps is a link to the GPS data saved as an Arrow data set on AWS S3
