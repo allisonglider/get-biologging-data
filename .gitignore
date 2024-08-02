@@ -42,6 +42,7 @@ vignettes/*.pdf
 raw_data/
 processed_data/
 tbmu_data/
+data/
 
 # Ignore config file, this contains access codes that should not be loaded to github
 config.yml
