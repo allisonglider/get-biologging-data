@@ -44,11 +44,12 @@ sex <- con %>%
 
 deployments <- dep %>% 
   filter(
-    site %in% c('Coats'), 
+    site %in% c('Coats','CGM'), 
     species == 'TBMU', # Only data for TBMU
-    time_released > as.POSIXct('2022-01-01'), # Only data from 2022
+    time_released > as.POSIXct('2017-01-01'), # Only data from 2022
     time_recaptured < as.POSIXct('2023-12-01'),
-    !is.na(gps_id) # exclude and captures that did not result in a deployment
+    !is.na(gps_id), # exclude and captures that did not result in a deployment
+    is.na(exclude)
   ) %>% 
   left_join(sex) %>% # join with sex data
   left_join(age) %>% # join with age data
@@ -78,7 +79,7 @@ deployments <- dep %>%
   collect() # collect data from the data base
 
 # make a list of the deployments we want to download 
-dd <- deployments$dep_id#[1:5] # We will limit it to the first 5 deployments for this example
+dd <- deployments$dep_id[deployments$time_recaptured < as.POSIXct('2021-12-01')] # We will limit it to the first 5 deployments for this example
 
 # check if project contains a folder named <raw_data> create one if needed
 if (dir.exists('raw_data') == F) dir.create('raw_data', recursive = T)
@@ -124,7 +125,7 @@ for (d in dd) {
     collect() %>% 
     group_by(site,  subsite, species,  year, metal_band, dep_id) %>% 
     arrow::write_dataset('raw_data/tdr', format = "parquet")
-  
+  print(d)
 }
 
 # -----
@@ -144,7 +145,7 @@ for (d in dd) {
     collect() %>% 
     group_by(site,  subsite, species,  year, metal_band, dep_id) %>% 
     arrow::write_dataset('raw_data/acc', format = "parquet")
-  
+  print(d)
 }
 
 # -----
