@@ -2,12 +2,11 @@
 # It relies on having a valid config.yml file in your root directory, if you do not
 # have a config file you can get one from me by email (allison.patterson@mail.mcgill.ca)
 
-# If this is your first time, run the three lines of code below to install specific 
+# If this is your first time, run the two commented lines of code below (lines 9-10) to install specific 
 # versions of packages not on CRAN. If you are running Windows and don't have Rtools installed, 
 # go here to install the correct version of Rtools: https://cran.r-project.org/bin/windows/Rtools/
 
 # install.packages("devtools")
-# devtools::install_version("duckdb", version = "0.8.1", repos = "http://cran.us.r-project.org")
 # devtools::install_github("allisonglider/seabiRds")
 
 library(DBI)
