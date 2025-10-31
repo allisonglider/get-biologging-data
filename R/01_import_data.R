@@ -2,12 +2,11 @@
 # It relies on having a valid config.yml file in your root directory, if you do not
 # have a config file you can get one from me by email (allison.patterson@mail.mcgill.ca)
 
-# If this is your first time, run the three lines of code below to install specific 
+# If this is your first time, run the two lines of code below to install specific 
 # versions of packages not on CRAN. If you are running Windows and don't have Rtools installed, 
 # go here to install the correct version of Rtools: https://cran.r-project.org/bin/windows/Rtools/
 
 # install.packages("devtools")
-# devtools::install_version("duckdb", version = "0.8.1", repos = "http://cran.us.r-project.org")
 # devtools::install_github("allisonglider/seabiRds")
 
 library(DBI)
@@ -44,12 +43,11 @@ sex <- con %>%
 
 deployments <- dep %>% 
   filter(
-    site %in% c('Coats','CGM'), 
+    site %in% c('Coats'), 
     species == 'TBMU', # Only data for TBMU
-    time_released > as.POSIXct('2017-01-01'), # Only data from 2022
-    time_recaptured < as.POSIXct('2023-12-01'),
+    time_released > as.POSIXct('2023-01-01'), # Only data after 2023
     !is.na(gps_id), # exclude and captures that did not result in a deployment
-    is.na(exclude)
+    #is.na(exclude)
   ) %>% 
   left_join(sex) %>% # join with sex data
   left_join(age) %>% # join with age data
@@ -79,7 +77,7 @@ deployments <- dep %>%
   collect() # collect data from the data base
 
 # make a list of the deployments we want to download 
-dd <- deployments$dep_id[deployments$time_recaptured < as.POSIXct('2021-12-01')] # We will limit it to the first 5 deployments for this example
+dd <- deployments$dep_id
 
 # check if project contains a folder named <raw_data> create one if needed
 if (dir.exists('raw_data') == F) dir.create('raw_data', recursive = T)
