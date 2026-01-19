@@ -43,10 +43,10 @@ sex <- con %>%
 
 deployments <- dep %>% 
   filter(
-    site %in% c('Coats'), 
+    #site %in% c('Digges'), 
     species == 'TBMU', # Only data for TBMU
     time_released > as.POSIXct('2022-01-01'), # Only data from 2022
-    time_recaptured < as.POSIXct('2023-12-01'),
+    #time_recaptured < as.POSIXct('2023-12-01'),
     !is.na(gps_id) # exclude and captures that did not result in a deployment
   ) %>% 
   left_join(sex) %>% # join with sex data
