@@ -9,6 +9,7 @@ theme_set(theme_light())
 # read in deployment data
 deployments <- readRDS('deployments.RDS') |> 
   filter(!is.na(acc_id)) |> 
+  dplyr::filter(time_recaptured > as.POSIXct('2024-01-01'), time_recaptured < as.POSIXct('2025-01-01')) |> 
   select(dep_id, metal_band, site, nest, time_released, time_recaptured, 
          dep_lon, dep_lat, mass_on, mass_off, status_on, status_off, sex, gps_id) 
 
@@ -24,6 +25,7 @@ flip_dd <- c("AA13","AA14","AA15","AA16","AA17","AA18","AA19",
 # ----
 # load the location data from the GPS dataset
 gps_data <- arrow::open_dataset('raw_data/gps') |> 
+  dplyr::filter(dep_id %in% deployments$dep_id) |> 
   select(dep_id, time, lon, lat) |> 
   collect() |> 
   arrange(dep_id, time) 
@@ -48,6 +50,8 @@ gps_data <- gps_data |>
     dt = getDT(time = time, units = 'hours'), # time between successive GPS fixes in hours
     speed = dist/dt # ground speed in km/hr
   ) |> select(dep_id, time, lon, lat, coldist, dist, dt, speed)
+gps_sf <- sf::st_as_sf(gps_data, coords = c('lon','lat'), crs = 4326)
+mapview::mapview(gps_sf)
 
 # ----
 # load the diving data from the tdr dataset
@@ -64,7 +68,7 @@ if (dir.exists('tbmu_data') == F) dir.create('tbmu_data', recursive = T)
 all_deps <- unique(deployments$dep_id)
 all_deps <- all_deps[!(all_deps %in% sub('.RDS', '',list.files('tbmu_data')))]
 
-for (dd in all_deps) {
+for (dd in all_deps[10:length(all_deps)]) {
   
   of <- paste0('tbmu_data/',dd,'.RDS')
   if (file.exists(of) == FALSE) {
@@ -86,9 +90,11 @@ for (dd in all_deps) {
     
     if (nrow(acc_data) > 0 & nrow(tdr_data) > 0) {
       
-      
-      if (deployments$gps_id[deployments$dep_id == dd] %in% flip_dd) acc_data <- checkAxes(acc_data, ask = F, force = T)
+      #if (deployments$gps_id[deployments$dep_id == dd] %in% flip_dd) acc_data <- checkAxes(acc_data, ask = F, force = T)
       f <- getFrequency(acc_data$time)
+      
+      # Fix flipped x
+      if (dd %in% c('EC19_118608230_20250709', 'EC17_130601402_20250701')) acc_data$x <- -acc_data$x
       
       acc_data <- acc_data |> 
         group_by(dep_id) |> 

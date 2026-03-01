@@ -45,7 +45,7 @@ deployments <- dep %>%
   filter(
     site %in% c('Coats'), 
     species == 'TBMU', # Only data for TBMU
-    time_released > as.POSIXct('2023-01-01'), # Only data after 2023
+    time_released > as.POSIXct('2016-01-01'), # Only data after 2023
     !is.na(gps_id), # exclude and captures that did not result in a deployment
     #is.na(exclude)
   ) %>% 
@@ -77,7 +77,8 @@ deployments <- dep %>%
   collect() # collect data from the data base
 
 # make a list of the deployments we want to download 
-dd <- deployments$dep_id
+dd <- deployments$dep_id[deployments$time_released > as.POSIXct('2024-01-01') &
+                           deployments$time_released < as.POSIXct('2025-01-01')]
 
 # check if project contains a folder named <raw_data> create one if needed
 if (dir.exists('raw_data') == F) dir.create('raw_data', recursive = T)
@@ -147,3 +148,4 @@ for (d in dd) {
 }
 
 # -----
+

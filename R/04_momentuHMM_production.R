@@ -6,8 +6,8 @@ theme_set(theme_light())
 
 set.seed(4252)
 
-colony <- 'CGM'
-year <- 2023
+colony <- 'Coats'
+year <- 2024
 
 my_crs <- '+proj=aeqd +lon_0=-82 +lat_0=63 +datum=WGS84 +units=m +no_defs'
 
@@ -23,7 +23,9 @@ dd <- dep_data |>
                     c('A21 99699804 20170721', 'G2 99683065 20170802', 'A13 117639807 20180801','A11 99687459 20190703',
                       'Blue11 99687464 20170803','G4 99662921 20170802','A32 99670888 20170727','AA28_99687275_20230720',
                       'A20 118608209 20180722','A110 118608142 20180802','A34 117639756 20180726',
-                      'A37 99687474 20180721'))
+                      'A37 99687474 20180721',
+                      'EC17_130601387_20250726', 'EC17_130601413_20250709', 
+                      'EC17_99653374_20250801', 'EC17_99696947_20250720'))
                 ) |>
   dplyr::pull(dep_id)
 
@@ -185,7 +187,7 @@ beta <- bestPar$beta
 stateNames <- c('Flying', 'Diving', 'Swimming', 'Colony')
 nbStates <- length(stateNames)
 
-st <- Sys.time()
+#st <- Sys.time()
 m <- fitHMM(hmmData, 
             #mvnCoords="mu", altCoordNames = "mu",
             nbStates=nbStates, 
@@ -196,7 +198,7 @@ m <- fitHMM(hmmData,
             stateNames = stateNames, #state names
             #knownStates = ifelse(hmmData$diving >= 3/20, 2, NA) # if > 5 seconds of diving set as diving
 )
-Sys.time() - st
+#Sys.time() - st
 m
 #plot(m)
 
@@ -216,8 +218,8 @@ hmm_sf <- hmmData |>
   sf::st_as_sf(coords = c('x', 'y'), crs = my_crs) 
 
 saveRDS(hmm_sf, paste0('tbmu_processed/TBMU_classified_', colony, "_",year,'.RDS'))
-`
-`# -----
+
+# -----
 # Examine classification
 
 # boxplot of wbf by state

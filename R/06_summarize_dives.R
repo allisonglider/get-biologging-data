@@ -3,11 +3,12 @@ library(momentuHMM)
 library(raster)
 library(ggplot2)
 library(dplyr)
+library(arrow)
 theme_set(theme_light())
 
 dep_data <- readRDS('deployments.RDS')
 
-dee <- read.csv('tbmu_processed/tbmu_daily_activity.csv') 
+dee <- read.csv('tbmu_processed/tbmu_daily_activity_20260126.csv') 
 out <- data.frame()
 
 for (dd in unique(dee$dep_id)) {
@@ -16,8 +17,8 @@ for (dd in unique(dee$dep_id)) {
   
   tdr_data <- arrow::open_dataset('raw_data/tdr') |>
     filter(dep_id %in% dd) |> 
-    select(dep_id, time, temperature_c, depth_m, wet) |>
     collect() |>
+    dplyr::select(dep_id, time, temperature_c, depth_m, wet) |>
     arrange(dep_id, time) |> 
     dplyr::mutate(
       depth_m = ifelse(depth_m > 250, NA, depth_m),
@@ -101,4 +102,4 @@ for (dd in unique(dee$dep_id)) {
 out <- out |> 
   dplyr::left_join(dep_data)
 
-write.csv(out, paste0('tbmu_processed/tbmu_dive_activity.csv'), row.names = F) 
+write.csv(out, paste0('tbmu_processed/tbmu_dive_activity_20260126.csv'), row.names = F) 
