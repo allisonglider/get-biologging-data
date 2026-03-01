@@ -43,9 +43,9 @@ sex <- con %>%
 
 deployments <- dep %>% 
   filter(
-    #site %in% c('Digges'), 
-    species == 'TBMU', # Only data for TBMU
-    time_released > as.POSIXct('2022-01-01'), # Only data from 2022
+    site %in% c('Middleton'), 
+    species == 'BLKI', # Only data for TBMU
+    time_released > as.POSIXct('2024-01-01'), # Only data from 2022
     #time_recaptured < as.POSIXct('2023-12-01'),
     !is.na(gps_id) # exclude and captures that did not result in a deployment
   ) %>% 
@@ -83,7 +83,7 @@ dd <- deployments$dep_id#[1:5] # We will limit it to the first 5 deployments for
 if (dir.exists('raw_data') == F) dir.create('raw_data', recursive = T)
 
 # Save out the deployment metadata as an RDS file
-saveRDS(deployments, 'deployments.RDS')
+saveRDS(deployments, 'raw_data/deployments.RDS')
 
 # -----
 # gps is a link to the GPS data saved as an Arrow data set on AWS S3

@@ -21,7 +21,7 @@ gps_data <- arrow::open_dataset('raw_data/gps') %>%
 # some basic gps data processing using seabiRds
 
 # filter out any locations are too far apart for a murre to travel
-speed_threshold <- 100 # km/hr
+speed_threshold <- 150 # km/hr
 gps_data <-do.call(rbind, 
                    lapply(unique(gps_data$dep_id), 
                           function(x) {
